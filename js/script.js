@@ -5,6 +5,141 @@ var lastLoadedDates = {
 };
 var deferredPrompt;
 
+// Authentication State
+var currentUser = {
+    role: 'viewer', // 'viewer', 'class_teacher', 'flower_teacher', 'principal', 'admin'
+    assignedClass: null
+};
+
+function handleRoleChange() {
+    var role = document.getElementById('login-role').value;
+    var pinGroup = document.getElementById('login-pin-group');
+    var classGroup = document.getElementById('login-class-group');
+    
+    if (role === 'viewer') {
+        pinGroup.style.display = 'none';
+        classGroup.style.display = 'none';
+    } else if (role === 'class_teacher') {
+        pinGroup.style.display = 'block';
+        classGroup.style.display = 'block';
+    } else {
+        pinGroup.style.display = 'block';
+        classGroup.style.display = 'none';
+    }
+}
+
+function processLogin() {
+    var role = document.getElementById('login-role').value;
+    var pin = document.getElementById('login-pin').value;
+    var assignedClass = document.getElementById('login-class').value;
+    
+    if (role === 'admin' && pin === 'admin123') {
+        currentUser.role = 'admin';
+    } else if (role === 'principal' && pin === 'prin123') {
+        currentUser.role = 'principal';
+    } else if (role === 'flower_teacher' && pin === 'flower123') {
+        currentUser.role = 'flower_teacher';
+    } else if (role === 'class_teacher' && pin === 'class123') {
+        currentUser.role = 'class_teacher';
+        currentUser.assignedClass = assignedClass;
+    } else if (role === 'viewer') {
+        currentUser.role = 'viewer';
+    } else {
+        alert("වැරදි මුරපදයක්! (Invalid PIN!)");
+        return;
+    }
+    
+    document.getElementById('login-modal').style.display = 'none';
+    applyAccessControl();
+}
+
+function applyAccessControl() {
+    var allInputs = document.querySelectorAll('input:not(#login-pin), select:not(#login-role):not(#login-class), textarea');
+    var allButtons = document.querySelectorAll('button:not(#menu-toggle):not(#theme-toggle):not(.btn-install)');
+    
+    // Default disable for everyone except admin
+    if (currentUser.role !== 'admin') {
+        allInputs.forEach(i => i.disabled = true);
+        allButtons.forEach(b => {
+            // Keep login button visible if modal is visible
+            if (b.closest('#login-modal')) return;
+            // Hide action buttons
+            b.style.display = 'none';
+        });
+    } else {
+        allInputs.forEach(i => i.disabled = false);
+        allButtons.forEach(b => b.style.display = '');
+        return; // Admin has full access, no further checks needed
+    }
+    
+    // Principal overrides
+    if (currentUser.role === 'principal') {
+        // 5th col is Gilanpasa
+        var gilanpasaInputs = document.querySelectorAll('#students-table td:nth-child(5) input');
+        gilanpasaInputs.forEach(input => input.disabled = false);
+        
+        var classGilanpasa = document.querySelectorAll('#classes-table td:nth-child(4) input');
+        classGilanpasa.forEach(input => input.disabled = false);
+        
+        document.querySelectorAll('.btn-save-all').forEach(b => b.style.display = '');
+    }
+    
+    // Flower Teacher overrides
+    if (currentUser.role === 'flower_teacher') {
+        // 4th col is Flower marks
+        var flowerInputs = document.querySelectorAll('#students-table td:nth-child(4) input');
+        flowerInputs.forEach(input => input.disabled = false);
+        
+        var classFlower = document.querySelectorAll('#classes-table td:nth-child(3) input');
+        classFlower.forEach(input => input.disabled = false);
+        
+        document.querySelectorAll('.btn-save-all').forEach(b => b.style.display = '');
+    }
+    
+    // Class Teacher overrides
+    if (currentUser.role === 'class_teacher' && currentUser.assignedClass) {
+        var classFilter = document.getElementById('student-class-filter');
+        if (classFilter) {
+            classFilter.value = currentUser.assignedClass;
+            filterStudentsByClass(); // Apply filter
+            classFilter.disabled = true; // Lock dropdown
+        }
+        
+        var studentRows = document.querySelectorAll('#students-table tbody tr');
+        studentRows.forEach(row => {
+            var gradeInput = row.querySelector('td:nth-child(2) select, td:nth-child(2) input');
+            var gradeVal = gradeInput ? gradeInput.value.trim() : '';
+            var cleanGradeVal = gradeVal.replace(/[^0-9]/g, '');
+            var cleanFilterVal = currentUser.assignedClass.replace(/[^0-9]/g, '');
+            
+            if (cleanGradeVal === cleanFilterVal || gradeVal.indexOf(currentUser.assignedClass) !== -1 || gradeVal === "") {
+                var rowInputs = row.querySelectorAll('input, select');
+                rowInputs.forEach(i => i.disabled = false);
+                var rowBtns = row.querySelectorAll('button');
+                rowBtns.forEach(b => b.style.display = '');
+            } else {
+                row.style.display = 'none'; // Ensure others are hidden
+            }
+            // Ensure they can select attendance date
+            var attDate = document.getElementById('student-attendance-date');
+            if(attDate) attDate.disabled = false;
+        });
+        
+        // Show add student btn and save btns
+        var addStudentBtn = document.querySelector('#students .btn-primary');
+        if (addStudentBtn) addStudentBtn.style.display = '';
+        document.querySelectorAll('#students .btn-save-all').forEach(b => b.style.display = '');
+    }
+    
+    // Viewers and non-admins shouldn't see upload zones
+    var uploadZone = document.querySelector('.gallery-upload-zone');
+    if (uploadZone) {
+        uploadZone.style.display = (currentUser.role === 'admin') ? 'flex' : 'none';
+    }
+    
+    // Viewer overrides (none, view only)
+}
+
 // PWA Install Prompt Listener
 window.addEventListener('beforeinstallprompt', (e) => {
     // Prevent the mini-infobar from appearing on mobile
@@ -335,6 +470,9 @@ function initApp() {
 
     // 7. Load Data from LocalStorage
     loadData();
+    
+    // Apply initial access control right away
+    applyAccessControl();
 
     // 8. Attach Auto-save Listeners
     attachAutoSave();
@@ -753,6 +891,9 @@ function refreshTableUI(tableId) {
             if (checks[0]) checks[0].checked = rec ? rec.att : false;
         }
     });
+    
+    // Apply access control to updated rows
+    if (typeof applyAccessControl === 'function') applyAccessControl();
 }
 
 // Attach event listeners to all inputs to trigger save
@@ -851,6 +992,8 @@ function addRow(btn) {
                 });
             }
         }
+        
+        if (typeof applyAccessControl === 'function') applyAccessControl();
     }
 }
 

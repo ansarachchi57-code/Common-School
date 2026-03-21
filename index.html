@@ -13,6 +13,46 @@
     <link rel="manifest" href="manifest.json">
 </head>
 <body>
+    <!-- Login Modal -->
+    <div id="login-modal" class="modal-overlay">
+        <div class="modal-content premium-card">
+            <h2 style="text-align:center; margin-bottom:1.5rem;">පද්ධතියට ඇතුල් වන්න (Login)</h2>
+            <div class="form-group mb-4">
+                <label>ඔබ කවුරුන්ද? (Role)</label>
+                <select id="login-role" class="custom-select" onchange="handleRoleChange()" style="width:100%; padding:0.8rem; font-size:1.1rem; border-radius:8px;">
+                    <option value="viewer">සිසුවා / දෙමාපියා (Student / Parent) - නරඹන්නෙකු පමණි</option>
+                    <option value="class_teacher">පන්ති භාර ගුරු (Class Teacher)</option>
+                    <option value="flower_teacher">මල් ලකුණු භාර ගුරු (Flower Teacher)</option>
+                    <option value="principal">ප්‍රධානාචාර්ය (Principal)</option>
+                    <option value="admin">ප්‍රධාන පරිපාලක (Admin)</option>
+                </select>
+            </div>
+            <div class="form-group mb-4" id="login-class-group" style="display:none;">
+                <label>ඔබගේ පන්තිය (Your Class)</label>
+                <select id="login-class" class="custom-select" style="width:100%; padding:0.8rem; font-size:1.1rem; border-radius:8px;">
+                    <option value="1">1 ශ්‍රේණිය</option>
+                    <option value="2">2 ශ්‍රේණිය</option>
+                    <option value="3">3 ශ්‍රේණිය</option>
+                    <option value="4">4 ශ්‍රේණිය</option>
+                    <option value="5">5 ශ්‍රේණිය</option>
+                    <option value="6">6 ශ්‍රේණිය</option>
+                    <option value="7">7 ශ්‍රේණිය</option>
+                    <option value="8">8 ශ්‍රේණිය</option>
+                    <option value="9">9 ශ්‍රේණිය</option>
+                    <option value="10">10 ශ්‍රේණිය</option>
+                    <option value="11">11 ශ්‍රේණිය</option>
+                    <option value="12">12 ශ්‍රේණිය</option>
+                    <option value="13">13 ශ්‍රේණිය</option>
+                </select>
+            </div>
+            <div class="form-group mb-4" id="login-pin-group" style="display:none;">
+                <label>මුරපදය (PIN)</label>
+                <input type="password" id="login-pin" class="table-input" placeholder="මුරපදය ඇතුළත් කරන්න" style="width:100%; padding:0.8rem; font-size:1.1rem; border-radius:8px;">
+            </div>
+            <button class="btn btn-primary" style="width:100%; justify-content:center; font-size:1.1rem; padding:0.8rem;" onclick="processLogin()"><i class="fas fa-sign-in-alt"></i> ඇතුල් වන්න (Continue)</button>
+        </div>
+    </div>
+    
     <div class="app-container">
         <div class="sidebar-overlay" id="sidebar-overlay"></div>
         <!-- Sidebar Navigation -->
@@ -46,8 +86,8 @@
                 <div class="header-user">
                     <button class="btn btn-primary btn-install" id="install-btn" style="display:none; padding: 0.5rem 1rem; font-size: 0.85rem;"><i class="fas fa-download"></i> Install (ස්ථාපනය කරන්න)</button>
                     <button class="btn-theme-toggle" id="theme-toggle" title="වර්ණ සංකලනය (Theme)"><i class="fas fa-palette"></i></button>
-                    <div class="user-profile">
-                        <img src="https://ui-avatars.com/api/?name=Admin&background=random" alt="AD">
+                    <div class="user-profile" onclick="document.getElementById('login-modal').style.display='flex'; document.getElementById('login-pin').value='';" style="cursor:pointer;" title="භූමිකාව වෙනස් කරන්න (Change Role / Logout)">
+                        <img src="https://ui-avatars.com/api/?name=Admin&background=random" alt="User">
                     </div>
                 </div>
             </header>
